@@ -27,7 +27,6 @@
   function openEnvelope() {
     envelope.classList.add('is-open');
     showCard();
-    try { sessionStorage.setItem('card-opened', '1'); } catch (e) { /* private mode */ }
 
     if (reduceMotion) {
       hideEnvelope();
@@ -44,14 +43,25 @@
     }
   }
 
-  // Already opened this session (or reduced motion): skip the gate entirely.
-  var alreadyOpened = false;
-  try { alreadyOpened = sessionStorage.getItem('card-opened') === '1'; } catch (e) { /* ignore */ }
+  // A reload should land on a sealed envelope, not halfway down the card.
+  // Browsers restore the previous scroll position by default, so opt out and
+  // jump to the top ourselves (instantly - html has scroll-behavior: smooth).
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-  if (alreadyOpened) {
+  function toTop() {
+    try { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+    catch (e) { window.scrollTo(0, 0); }
+  }
+
+  // Escape hatch while writing copy: load index.html#open to skip the gate and
+  // go straight to the card.
+  if (location.hash === '#open') {
     showCard();
     hideEnvelope();
   } else {
+    toTop();
+    // Some browsers restore scroll after load fires; undo that too.
+    window.addEventListener('load', toTop);
     openBtn.addEventListener('click', openEnvelope);
   }
 
